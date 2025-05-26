@@ -5,33 +5,46 @@ import User from './userModel.js';
 
 const router = express.Router();
 
-// Get all users (for testing/dev)
-router.get('/', async (req, res) => {
+// 🔐 Middleware to authenticate token
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // remove "BEARER "
+
+  if (!token) {
+    return res.status(401).json({ success: false, msg: 'Missing token' });
+  }
+
+  jwt.verify(token, process.env.SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ success: false, msg: 'Invalid token' });
+    }
+    req.user = user; // { username: ... }
+    next();
+  });
+}
+
+// 🧪 Dev route: Get all users
+router.get('/', asyncHandler(async (req, res) => {
   const users = await User.find();
   res.status(200).json(users);
-});
+}));
 
-// Register or Authenticate user
+// 📦 Register or Authenticate user
 router.post('/', asyncHandler(async (req, res) => {
-  try {
-    const { username, password } = req.body;
+  const { username, password } = req.body;
 
-    if (!username || !password) {
-      return res.status(400).json({ success: false, msg: 'Username and password are required.' });
-    }
+  if (!username || !password) {
+    return res.status(400).json({ success: false, msg: 'Username and password are required.' });
+  }
 
-    if (req.query.action === 'register') {
-      await registerUser(req, res);
-    } else {
-      await authenticateUser(req, res);
-    }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, msg: 'Internal server error.' });
+  if (req.query.action === 'register') {
+    return await registerUser(req, res);
+  } else {
+    return await authenticateUser(req, res);
   }
 }));
 
-// 🔐 REGISTER USER FUNCTION (password hashing handled in schema)
+// ✅ Register a new user
 async function registerUser(req, res) {
   const { username, password } = req.body;
 
@@ -49,14 +62,17 @@ async function registerUser(req, res) {
     return res.status(400).json({ success: false, msg: 'Username already exists.' });
   }
 
-  // Save user with plain password; schema will hash it
-  const newUser = new User({ username, password });
-  await newUser.save();
-
-  res.status(201).json({ success: true, msg: 'User registered successfully.' });
+  try {
+    const newUser = new User({ username, password });
+    await newUser.save();
+    return res.status(201).json({ success: true, msg: 'User registered successfully.' });
+  } catch (error) {
+    console.error('Error saving user:', error);
+    return res.status(500).json({ success: false, msg: 'Server error while registering user.' });
+  }
 }
 
-// 🔐 AUTHENTICATE USER FUNCTION
+// 🔑 Authenticate user and return token
 async function authenticateUser(req, res) {
   const user = await User.findByUserName(req.body.username);
   if (!user) {
@@ -65,11 +81,15 @@ async function authenticateUser(req, res) {
 
   const isMatch = await user.comparePassword(String(req.body.password));
   if (isMatch) {
-    const token = jwt.sign({ username: user.username }, process.env.SECRET);
-    res.status(200).json({ success: true, token: 'BEARER ' + token });
+    const token = jwt.sign({ username: user.username }, process.env.SECRET, { expiresIn: '1h' });
+    return res.status(200).json({ success: true, token: 'BEARER ' + token });
   } else {
-    res.status(401).json({ success: false, msg: 'Wrong password.' });
+    return res.status(401).json({ success: false, msg: 'Wrong password.' });
   }
 }
+
+// — Removed these two routes entirely —
+// router.get('/:username/favorites', ...)
+// router.post('/:username/favorites', ...)
 
 export default router;
