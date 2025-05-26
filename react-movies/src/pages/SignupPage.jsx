@@ -22,7 +22,6 @@ const SignUpPage = () => {
         body: JSON.stringify({ username, password }),
       });
 
-      // This handles unexpected empty or invalid JSON from backend
       const text = await response.text();
       let data;
 

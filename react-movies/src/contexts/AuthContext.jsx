@@ -7,8 +7,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const navigate = useNavigate();
 
-  // Replace this with your actual API base URL
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api/users";
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api/users";
 
   const signup = async (userData) => {
     try {
@@ -21,7 +20,7 @@ export const AuthProvider = ({ children }) => {
       if (!response.ok) throw new Error("Signup failed");
 
       const data = await response.json();
-      setUser(data.user); // assuming API responds with { user: ... }
+      setUser(data.user); 
       navigate("/");
     } catch (err) {
       console.error(err.message);
@@ -38,7 +37,7 @@ export const AuthProvider = ({ children }) => {
     const data = await response.json();
     if (data.success) {
       localStorage.setItem('token', data.token);
-      setUser({ username }); // or however you track logged-in user state
+      setUser({ username }); 
       return true;
     }
     return false;
@@ -61,4 +60,4 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-export default AuthContext; // ✅ ADD THIS LINE
+export default AuthContext; 

@@ -3,7 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 const LoginPage = () => {
-  const { login } = useAuth();  // assuming your AuthContext has a login function
+  const { login } = useAuth();  
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
@@ -11,7 +11,7 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const success = await login(username, password);  // login returns true/false
+      const success = await login(username, password);  
       if (success) {
         alert("Login successful!");
         navigate("/");  // redirect after login
